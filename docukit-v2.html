@@ -931,6 +931,47 @@ function clearTool(tool){FILES[tool]=[];renderFiles(tool);hideSt(tool);if(tool==
 // ── CONVERT ────────────────────────────────────────────────────
 let cvContent='', cvExt='txt', cvBlob=null;
 
+// ── API KEY ───────────────────────────────────────────────────
+function saveApiKey(val){
+  try{ localStorage.setItem('cc_apikey', val); }catch(e){}
+  updateApiKeyStatus();
+}
+function getApiKey(){
+  try{ return localStorage.getItem('cc_apikey')||''; }catch(e){ return ''; }
+}
+function loadApiKey(){
+  const k=getApiKey();
+  const el=document.getElementById('cv-apikey');
+  if(el && k) el.value=k;
+  updateApiKeyStatus();
+}
+function updateApiKeyStatus(){
+  const k=getApiKey();
+  const el=document.getElementById('cv-apikey-status');
+  if(!el) return;
+  if(k.length>10){ el.style.display='inline'; el.style.color='var(--mint-dark)'; el.textContent='✓ מפתח שמור'; }
+  else{ el.style.display='none'; }
+}
+async function testApiKey(){
+  const k=getApiKey();
+  if(!k){ showSt('convert','err','הכנסי מפתח API בשדה למעלה'); return; }
+  showSt('convert','load','בודק מפתח...');
+  try{
+    const r=await fetch('https://api.cloudconvert.com/v2/users/me',{
+      headers:{ Authorization:'Bearer '+k }
+    });
+    if(r.ok){
+      const d=await r.json();
+      showSt('convert','ok','✓ מפתח תקין! קרדיטים: '+(d.data?.credits??'—'));
+      updateApiKeyStatus();
+    } else {
+      showSt('convert','err','מפתח לא תקין — בדקי שהעתקת נכון');
+    }
+  }catch(e){
+    showSt('convert','err','שגיאת רשת: '+e.message);
+  }
+}
+
 function updateConvertOptions(){
   const files=FILES.convert;
   if(!files.length)return;
